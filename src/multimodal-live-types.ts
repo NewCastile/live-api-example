@@ -49,6 +49,7 @@ export type LiveGenerationConfig = GenerationConfig & {
         voiceName: "Puck" | "Charon" | "Kore" | "Fenrir" | "Aoede" | string;
       };
     };
+    languageCode?: string;
   };
 };
 
@@ -175,7 +176,7 @@ export const isToolCallMessage = (a: any): a is ToolCallMessage =>
   prop(a, "toolCall");
 
 export const isToolCallCancellationMessage = (
-  a: unknown,
+  a: unknown
 ): a is ToolCallCancellationMessage =>
   prop(a, "toolCallCancellation") &&
   isToolCallCancellation((a as any).toolCallCancellation);
@@ -225,7 +226,7 @@ export function isLiveFunctionCall(value: unknown): value is LiveFunctionCall {
 }
 
 export function isLiveFunctionResponse(
-  value: unknown,
+  value: unknown
 ): value is LiveFunctionResponse {
   if (!value || typeof value !== "object") return false;
 
@@ -237,6 +238,6 @@ export function isLiveFunctionResponse(
 }
 
 export const isToolCallCancellation = (
-  a: unknown,
+  a: unknown
 ): a is ToolCallCancellationMessage["toolCallCancellation"] =>
   typeof a === "object" && Array.isArray((a as any).ids);
