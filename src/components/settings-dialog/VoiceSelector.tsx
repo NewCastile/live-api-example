@@ -38,6 +38,7 @@ export default function VoiceSelector() {
                 voiceName: voiceName,
               },
             },
+            languageCode: "en-US",
           },
         },
       });

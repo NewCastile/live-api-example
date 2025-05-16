@@ -60,11 +60,7 @@ body {
 
 .material-symbols-outlined {
   &.filled {
-    font-variation-settings:
-      "FILL" 1,
-      "wght" 400,
-      "GRAD" 0,
-      "opsz" 24;
+    font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
   }
 }
 
@@ -150,9 +146,13 @@ body {
 
   .main-app-area {
     display: flex;
-    flex: 1;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+  }
+
+  .main-app-area > * + * {
+    margin-top: 1rem;
   }
 
   .function-call {

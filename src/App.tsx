@@ -18,11 +18,14 @@ import { useRef, useState } from "react";
 import "./App.scss";
 import { LiveAPIProvider } from "./contexts/LiveAPIContext";
 import SidePanel from "./components/side-panel/SidePanel";
-import { Altair } from "./components/altair/Altair";
+// import { Altair } from "./components/altair/Altair";
 import ControlTray from "./components/control-tray/ControlTray";
 import cn from "classnames";
+import { LessonProvider, mockInstructions } from "./contexts/LessonContext";
+import LessonInstructions from "./components/lesson-instructions/LessonInstructions";
 
 const API_KEY = process.env.REACT_APP_GEMINI_API_KEY as string;
+
 if (typeof API_KEY !== "string") {
   throw new Error("set REACT_APP_GEMINI_API_KEY in .env");
 }
@@ -40,32 +43,38 @@ function App() {
   return (
     <div className="App">
       <LiveAPIProvider url={uri} apiKey={API_KEY}>
-        <div className="streaming-console">
-          <SidePanel />
-          <main>
-            <div className="main-app-area">
-              {/* APP goes here */}
-              <Altair />
-              <video
-                className={cn("stream", {
-                  hidden: !videoRef.current || !videoStream,
-                })}
-                ref={videoRef}
-                autoPlay
-                playsInline
-              />
-            </div>
-
-            <ControlTray
-              videoRef={videoRef}
-              supportsVideo={true}
-              onVideoStreamChange={setVideoStream}
-              enableEditingSettings={true}
-            >
-              {/* put your own buttons here */}
-            </ControlTray>
-          </main>
-        </div>
+        <LessonProvider initialInstructions={mockInstructions}>
+          <div className="streaming-console">
+            <SidePanel />
+            <main>
+              <div className="main-app-area">
+                {/* APP goes here */}
+                {/* <Altair /> */}
+                <LessonInstructions />
+                <video
+                  style={{
+                    maxWidth: "200px",
+                    maxHeight: "100px",
+                  }}
+                  className={cn("stream", {
+                    hidden: !videoRef.current || !videoStream,
+                  })}
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                />
+              </div>
+              <ControlTray
+                videoRef={videoRef}
+                supportsVideo={true}
+                onVideoStreamChange={setVideoStream}
+                enableEditingSettings={false}
+              >
+                {/* put your own buttons here */}
+              </ControlTray>
+            </main>
+          </div>
+        </LessonProvider>
       </LiveAPIProvider>
     </div>
   );
