@@ -34,7 +34,7 @@ export function useScreenCapture(): UseMediaStreamResult {
         stream
           .getTracks()
           .forEach((track) =>
-            track.removeEventListener("ended", handleStreamEnded),
+            track.removeEventListener("ended", handleStreamEnded)
           );
       };
     }
@@ -47,6 +47,7 @@ export function useScreenCapture(): UseMediaStreamResult {
       video: true,
       // controller
     });
+
     setStream(mediaStream);
     setIsStreaming(true);
     return mediaStream;
