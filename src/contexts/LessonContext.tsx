@@ -239,53 +239,50 @@ export const useLessonContext = () => {
 
 export const mockInstructions: Instruction[] = [
   {
-    task: "Greet the user and tell them that today they will learn how to work with the Roblox Studio interface.",
-    verificationTask: "Verify if the user wants to move on",
+    task: "Tell the user to open Roblox Studio.",
+    verificationTask: "Check the screen and verify if Roblox Studio is opened.",
     completed: null,
     state: InstructionState.Idle,
   },
   {
-    task: "Tell the user to open Roblox Studio",
-    verificationTask: "Verify if the Roblox Studio interface is visible",
-    completed: null,
-    state: InstructionState.Idle,
-  },
-  {
-    task: "Explain to the user how to create a new world in Roblox Studio using the baseplate template",
+    task: "Explain to the user how to create a new world in Roblox Studio using the baseplate template.",
     verificationTask:
-      "Verify if the baseplate template is visible in the Roblox Studio",
+      "Check the screen to verify if the baseplate template is visible.",
     completed: null,
     state: InstructionState.Idle,
   },
   {
-    task: "Explain to the user how to create a new object in Roblox Studio",
+    task: "Explain to the user how to create a new object in Roblox Studio.",
     verificationTask:
-      "Verify if there is an object in the Roblox Studio editor",
+      "Check the screen to see if there is a new object in the Roblox Studio editor.",
     completed: null,
     state: InstructionState.Idle,
   },
   {
-    task: "Explain to the user how to move the new object",
-    verificationTask: "Verify if the user can move the object",
-    completed: null,
-    state: InstructionState.Idle,
-  },
-  {
-    task: "Explain to the user how to scale the new object",
-    verificationTask: "Verify if the user can scale the object",
-    completed: null,
-    state: InstructionState.Idle,
-  },
-  {
-    task: "Explain to the user how to rotate the new object",
-    verificationTask: "Verify if the user can rotate the object",
-    completed: null,
-    state: InstructionState.Idle,
-  },
-  {
-    task: "End the tutorial and ask for feedback",
+    task: "Explain to the user how to move the new object.",
     verificationTask:
-      "Verify if the user has given feedback about the tutorial",
+      "Check the screen and verify if the user moved the object.",
+    completed: null,
+    state: InstructionState.Idle,
+  },
+  {
+    task: "Explain to the user how to scale the new object.",
+    verificationTask:
+      "Check the screen and verify if the user scaled the object.",
+    completed: null,
+    state: InstructionState.Idle,
+  },
+  {
+    task: "Explain to the user how to rotate the new object.",
+    verificationTask:
+      "Check the screen and verify if the user rotated the object.",
+    completed: null,
+    state: InstructionState.Idle,
+  },
+  {
+    task: "End the tutorial and ask for feedback.",
+    verificationTask:
+      "Verify if the user has given feedback about the tutorial.",
     completed: null,
     state: InstructionState.Idle,
   },
