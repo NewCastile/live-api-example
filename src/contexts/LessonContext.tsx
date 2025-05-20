@@ -3,6 +3,7 @@ import { createContext, useContext, useReducer } from "react";
 export enum LessonState {
   Idle = "IDLE",
   InProgress = "IN_PROGRESS",
+  WaitingResponse = "WAITING_RESPONSE",
   Completed = "COMPLETED",
 }
 
@@ -36,13 +37,22 @@ export const LessonContext = createContext<LessonContextProps>({
 export interface Instruction {
   task: string;
   verificationTask: string;
+  verificationTaskInputType: InstructionVerificationTaskInputType;
   completed: Date | null;
   state: InstructionState;
+}
+
+export enum InstructionVerificationTaskInputType {
+  Text = "TEXT",
+  Audio = "AUDIO",
+  Image = "IMAGE",
 }
 
 export enum LessonContextActions {
   StartLesson = "START_LESSON",
   ResetLesson = "RESET_LESSON",
+  CompleteLesson = "COMPLETE_LESSON",
+  WaitForResponse = "WAIT_FOR_RESPONSE",
   MoveToNext = "MOVE_TO_NEXT",
   MoveToPrevious = "MOVE_TO_PREVIOUS",
 }
@@ -50,6 +60,7 @@ export enum LessonContextActions {
 export enum InstructionState {
   Idle = "IDLE",
   InProgress = "IN_PROGRESS",
+  WaitingResponse = "WAITING_RESPONSE",
   Completed = "COMPLETED",
 }
 
@@ -168,6 +179,17 @@ const markInstructionAsCompleted = ({
   };
 };
 
+const markInstructionAsWaitingResponse = ({
+  instruction,
+}: {
+  instruction: Instruction;
+}): Instruction => {
+  return {
+    ...instruction,
+    state: InstructionState.WaitingResponse,
+  };
+};
+
 const startLesson = ({
   ctx,
 }: {
@@ -189,6 +211,37 @@ const startLesson = ({
   };
 };
 
+const completeLesson = ({
+  ctx,
+}: {
+  ctx: LessonContextState;
+}): LessonContextState => {
+  return {
+    ...ctx,
+    instructions: ctx.instructions.map((instruction) => {
+      return markInstructionAsCompleted({ instruction });
+    }),
+    state: LessonState.Completed,
+  };
+};
+
+const waitForResponse = ({
+  ctx,
+}: {
+  ctx: LessonContextState;
+}): LessonContextState => {
+  return {
+    ...ctx,
+    instructions: ctx.instructions.map((instruction) => {
+      if (instruction.state === InstructionState.InProgress) {
+        return markInstructionAsWaitingResponse({ instruction });
+      }
+      return instruction;
+    }),
+    state: LessonState.WaitingResponse,
+  };
+};
+
 export const InstructionsReducer = (
   state: LessonContextState,
   action: {
@@ -202,8 +255,13 @@ export const InstructionsReducer = (
       return moveToNextInstruction({ ctx: state });
     case LessonContextActions.MoveToPrevious:
       return moveToPreviousInstruction({ ctx: state });
+    case LessonContextActions.WaitForResponse:
+      return waitForResponse({ ctx: state });
     case LessonContextActions.ResetLesson:
       return markLessonAsIdle({ ctx: state });
+    case LessonContextActions.CompleteLesson:
+      return completeLesson({ ctx: state });
+
     default:
       return state;
   }
@@ -239,50 +297,62 @@ export const useLessonContext = () => {
 
 export const mockInstructions: Instruction[] = [
   {
-    task: "Tell the user to open Roblox Studio.",
-    verificationTask: "Check the screen and verify if Roblox Studio is opened.",
+    task: "Open Roblox Studio.",
+    verificationTask: `Check the student screen and see if the Roblox Studio program is visible
+    and shows the different templates available to create a new world. If so, call the "verify_step" function.`,
+    verificationTaskInputType: InstructionVerificationTaskInputType.Image,
     completed: null,
     state: InstructionState.Idle,
   },
   {
-    task: "Explain to the user how to create a new world in Roblox Studio using the baseplate template.",
-    verificationTask:
-      "Check the screen to verify if the baseplate template is visible.",
+    task: `Create a new world in Roblox Studio using the baseplate template.`,
+    verificationTask: `Check the student screen and see if Roblox Studio shows blue sky, 
+    a gray plane in a grid pattern and a white flat square platform. If so, call the "verify_step" function.`,
+    verificationTaskInputType: InstructionVerificationTaskInputType.Image,
     completed: null,
     state: InstructionState.Idle,
   },
   {
-    task: "Explain to the user how to create a new object in Roblox Studio.",
-    verificationTask:
-      "Check the screen to see if there is a new object in the Roblox Studio editor.",
+    task: "Explain to the student how to create a new object in Roblox Studio.",
+    verificationTask: `Check the screen and see if there is a new object in the Roblox Studio editor. 
+    In the created world, there should be a new object (either a cube, a sphere or a cylinder) along with the worlds spawn.
+    If so, call the "verify_step" function.`,
+    verificationTaskInputType: InstructionVerificationTaskInputType.Image,
     completed: null,
     state: InstructionState.Idle,
   },
   {
-    task: "Explain to the user how to move the new object.",
-    verificationTask:
-      "Check the screen and verify if the user moved the object.",
+    task: "Explain to the student how to move the new object.",
+    verificationTask: `Check the screen and see if the student has selected the object with the Move tool selected and 
+    its changing the position of the object by dragging the arrows surrounding the object with the mouse. If
+    so call the "verify_step" function.`,
+    verificationTaskInputType: InstructionVerificationTaskInputType.Image,
     completed: null,
     state: InstructionState.Idle,
   },
   {
-    task: "Explain to the user how to scale the new object.",
-    verificationTask:
-      "Check the screen and verify if the user scaled the object.",
+    task: "Explain to the student how to scale the new object.",
+    verificationTask: `Check the screen and see if the student has selected the object with the Scale tool and its 
+    modifying the size of the object by dragging the spheres surrounding the object using the mouse. If so, call the
+    "verify_step" function.`,
+    verificationTaskInputType: InstructionVerificationTaskInputType.Image,
     completed: null,
     state: InstructionState.Idle,
   },
   {
-    task: "Explain to the user how to rotate the new object.",
-    verificationTask:
-      "Check the screen and verify if the user rotated the object.",
+    task: "Explain to the student how to rotate the new object.",
+    verificationTask: `Check the screen and see if the student has selected the object with the Rotate tool 
+    and its rotating the object by dragging the circles surrounding the object using the mouse.
+    If so, call the "verify_step" function.`,
+    verificationTaskInputType: InstructionVerificationTaskInputType.Image,
     completed: null,
     state: InstructionState.Idle,
   },
   {
     task: "End the tutorial and ask for feedback.",
-    verificationTask:
-      "Verify if the user has given feedback about the tutorial.",
+    verificationTask: `Wait for the student to give feedback about the tutorial. Once the student has given his opinion,
+    close the tutorial and call the "go_to_next_step" function.`,
+    verificationTaskInputType: InstructionVerificationTaskInputType.Text,
     completed: null,
     state: InstructionState.Idle,
   },

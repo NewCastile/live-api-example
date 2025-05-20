@@ -25,6 +25,12 @@ import { AudioRecorder } from "../../lib/audio-recorder";
 import AudioPulse from "../audio-pulse/AudioPulse";
 import "./control-tray.scss";
 import SettingsDialog from "../settings-dialog/SettingsDialog";
+import {
+  InstructionState,
+  LessonContextActions,
+  LessonState,
+  useLessonContext,
+} from "../../contexts/LessonContext";
 
 export type ControlTrayProps = {
   videoRef: RefObject<HTMLVideoElement>;
@@ -75,6 +81,7 @@ function ControlTray({
   const renderCanvasRef = useRef<HTMLCanvasElement>(null);
   const connectButtonRef = useRef<HTMLButtonElement>(null);
 
+  const { state, dispatch } = useLessonContext();
   const { client, connected, connect, disconnect, volume } =
     useLiveAPIContext();
 
@@ -121,6 +128,9 @@ function ControlTray({
       const video = videoRef.current;
       const canvas = renderCanvasRef.current;
 
+      const currentInstruction =
+        state.instructions[state.currentInstructionIndex];
+
       if (!video || !canvas) {
         return;
       }
@@ -132,7 +142,11 @@ function ControlTray({
         ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
         const base64 = canvas.toDataURL("image/jpeg", 1.0);
         const data = base64.slice(base64.indexOf(",") + 1, Infinity);
-        client.sendRealtimeInput([{ mimeType: "image/jpeg", data }]);
+        client.send([
+          {
+            inlineData: { mimeType: "image/jpeg", data },
+          },
+        ]);
       }
       if (connected) {
         timeoutId = window.setTimeout(sendVideoFrame, 1000 / 0.5);
@@ -144,7 +158,7 @@ function ControlTray({
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [connected, activeVideoStream, client, videoRef]);
+  }, [connected, activeVideoStream, client, state, videoRef]);
 
   //handler for swapping from one video-stream to the next
   const changeStreams = (next?: UseMediaStreamResult) => async () => {

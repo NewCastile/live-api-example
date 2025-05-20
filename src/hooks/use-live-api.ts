@@ -42,6 +42,7 @@ export function useLiveAPI({
     () => new MultimodalLiveClient({ url, apiKey }),
     [url, apiKey]
   );
+
   const audioStreamerRef = useRef<AudioStreamer | null>(null);
 
   const [connected, setConnected] = useState(false);

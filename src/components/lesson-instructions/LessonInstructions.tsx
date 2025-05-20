@@ -1,5 +1,5 @@
 import "./lesson-intructions.css";
-import { Tool } from "@google/generative-ai";
+import { SchemaType, Tool } from "@google/generative-ai";
 import { useEffect, useState } from "react";
 import {
   ToolCall,
@@ -15,7 +15,6 @@ import {
 import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
 
 // Types
-
 interface ResponseObject extends LiveFunctionResponse {
   name: string;
   response: { result: object };
@@ -24,9 +23,11 @@ interface ResponseObject extends LiveFunctionResponse {
 export enum FunctionDeclarationNames {
   StartLesson = "start_lesson",
   ResetLesson = "reset_lesson",
+  CompleteLesson = "complete_lesson",
   VerifyStep = "verify_step",
   GoToNextStep = "go_to_next_step",
   GoToPreviousStep = "go_to_previous_step",
+  ProgramOpened = "program_opened",
 }
 
 // Tools
@@ -34,26 +35,30 @@ const toolObject: Tool[] = [
   {
     functionDeclarations: [
       {
-        name: "start_lesson",
+        name: FunctionDeclarationNames.StartLesson,
         description:
           "The user says 'Hi, I'm ready to learn!'. Start the lesson.",
       },
       {
-        name: "reset_lesson",
-        description: "Resets the lesson.",
+        name: FunctionDeclarationNames.ResetLesson,
+        description: "Resets the lesson and marks al it's steps as idle.",
       },
       {
-        name: "verify_step",
+        name: FunctionDeclarationNames.CompleteLesson,
+        description: "Marks the lesson and all it's steps as completed.",
+      },
+      {
+        name: FunctionDeclarationNames.VerifyStep,
         description:
-          "Check the user screen to verify if the current step has been completed.",
+          "Based on the current step verification task, verify if the user has completed it.",
       },
       {
-        name: "go_to_next_step",
+        name: FunctionDeclarationNames.GoToNextStep,
         description:
           "Marks the current step as completed and moves to the next step of the lesson.",
       },
       {
-        name: "go_to_previous_step",
+        name: FunctionDeclarationNames.GoToPreviousStep,
         description: "Moves to the previous step of the lesson.",
       },
     ],
@@ -63,37 +68,73 @@ const toolObject: Tool[] = [
 const systemInstructionObject = {
   parts: [
     {
-      text: `In this conversation you will guide the user thru a lesson to familiarize the user with the Roblox Studio interface.
-      The objective of this lesson is to briefly explain how to add new models and how to use the Move, Scale, and Rotate tools 
-      to manipulate the objects in the scene. Use the tools provided to fulfill requests to help modify the list of the steps to follow. 
-      Always check that the user has completed the step before going to the next one. Always call any relevant tools *before* speaking.    
-
-      Follow this steps to guide the user through the lesson:
+      text: `In this conversation you will be a teacher for a 8-10 year old kid.
+      You will start the lesson only when the student is ready, for this, wait for the student to say
+      something like "I'm ready to start the lesson".
+      The objective of this lesson is to briefly introduce the student to the Roblox Studio interface.
+      Then student will be sharing his screen to you for you to assist and instruct him on how to complete
+      each step of the lesson.
+      You will process and interpret the student's screen and his activity to ensure that he is following
+      the given instructions accordingly.
+      The only pre-requisite for this lesson in particular is to have Roblox Studio installed.
+      You will wait patiently for the student to complete the instructions, try not to interrupt him
+      or saturate him with too many questions or instructions, instead, give the instructions once
+      and stay quiet until the student has completed the instruction.
+      Here is a list of the steps to follow in order to complete the lesson:
 
       ${mockInstructions.map((instruction, index) => {
-        return `
-        ${index + 1}. ${instruction.task}. To move on: ${
-          instruction.verificationTask
-        }.
-        ${
-          index + 1 === mockInstructions.length
-            ? "If this is the case, move to the next step.\n"
-            : "\n"
-        }`;
+        return `${index + 1}. ${
+          instruction.task
+        }. To verify this has been done: ${instruction.verificationTask}`;
       })}
 
-      Start the lesson when the user greets you with a simple "Hi, I'm ready to learn!". 
-      Constantly check the users screen and describe what they are doing.
-      Based on the user activity, understand what they are doing and verify if their action completes the current step.
-      Speak as helpfully and concisely as possible. Always call any relevant tools on each of the given steps
-      when you think its appropriate.
+      You will:
+      * Speak as helpfully and concisely as possible.
+      * Wait for the student to complete the instruction given on the moment for atleast 3 minutes.
+      * Only repeat the instructions when the student ask for it.
+      * Call the apropiate tool to move to the next step if the current step has been completed.
 
-      By the end of the conversation, the user will be familiarized with the Roblox Studio interface, how to add models and 
-      control them in a very basic level. After finishing the lesson, congratulate the user and close the lesson.
+      After finishing the lesson, congratulate the student, ask for feedback and close the lesson.
       `,
     },
   ],
 };
+
+const reactiveClientInstructionObject = {
+  parts: [
+    {
+      text: `Your job would be to interact with the user screen, detect, name and describe the programs the user opens
+      or that are visible on the screen.
+      Use the provided tools to detect this specifics scenarios and send the result to the model.`,
+    },
+  ],
+};
+
+const reactiveClientToolObject: Tool[] = [
+  {
+    functionDeclarations: [
+      {
+        name: FunctionDeclarationNames.ProgramOpened,
+        description: `Check if there is a program opened. In this case, send the result to the model providing the program name
+        and describe the program interface.`,
+        parameters: {
+          type: SchemaType.OBJECT,
+          properties: {
+            program_name: {
+              type: SchemaType.STRING,
+              description: "The name of the program opened.",
+            },
+            program_interface: {
+              type: SchemaType.STRING,
+              description: "The interface of the program opened.",
+            },
+          },
+          required: ["program_name", "program_interface"],
+        },
+      },
+    ],
+  },
+];
 
 export default function LessonInstructions() {
   const { state, dispatch } = useLessonContext();
@@ -118,6 +159,7 @@ export default function LessonInstructions() {
 
   useEffect(() => {
     const onToolCall = (toolCall: ToolCall) => {
+      console.log("tool call");
       const fCalls = toolCall.functionCalls;
       const functionResponses: ResponseObject[] = [];
 
@@ -132,23 +174,39 @@ export default function LessonInstructions() {
           };
           switch (fCall.name) {
             case FunctionDeclarationNames.StartLesson: {
-              dispatch({ type: LessonContextActions.StartLesson });
+              dispatch({
+                type: LessonContextActions.StartLesson,
+              });
               break;
             }
             case FunctionDeclarationNames.ResetLesson: {
-              dispatch({ type: LessonContextActions.ResetLesson });
+              dispatch({
+                type: LessonContextActions.ResetLesson,
+              });
+              break;
+            }
+            case FunctionDeclarationNames.CompleteLesson: {
+              dispatch({
+                type: LessonContextActions.CompleteLesson,
+              });
               break;
             }
             case FunctionDeclarationNames.VerifyStep: {
-              dispatch({ type: LessonContextActions.MoveToNext });
+              dispatch({
+                type: LessonContextActions.MoveToNext,
+              });
               break;
             }
             case FunctionDeclarationNames.GoToNextStep: {
-              dispatch({ type: LessonContextActions.MoveToNext });
+              dispatch({
+                type: LessonContextActions.MoveToNext,
+              });
               break;
             }
             case FunctionDeclarationNames.GoToPreviousStep: {
-              dispatch({ type: LessonContextActions.MoveToPrevious });
+              dispatch({
+                type: LessonContextActions.MoveToPrevious,
+              });
               break;
             }
           }
@@ -182,16 +240,7 @@ export default function LessonInstructions() {
         functionResponses: toolResponse.functionResponses.map(
           (functionResponse) => {
             const responseObject = functionResponse as ResponseObject;
-            if (responseObject.name === FunctionDeclarationNames.VerifyStep) {
-              return {
-                ...responseObject,
-                response: {
-                  result: {
-                    string_value: "Step verified",
-                  },
-                },
-              };
-            }
+            console.log("responseObject", responseObject);
             return functionResponse;
           }
         ),
@@ -208,9 +257,7 @@ export default function LessonInstructions() {
       return;
     }
 
-    client.send({
-      text: "Start the lesson",
-    });
+    client.send([{ text: "Hello, I'm ready to learn!" }]);
   };
 
   return (
@@ -238,7 +285,7 @@ export default function LessonInstructions() {
         <div>{state.state}</div>
         {state.instructions.map((instruction, index) => {
           return (
-            <pre key={index}>
+            <pre key={index} style={{ width: "100px" }}>
               {index + 1}: {JSON.stringify(instruction, null, 2)}
             </pre>
           );

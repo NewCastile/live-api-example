@@ -24,14 +24,14 @@ import cn from "classnames";
 import { LessonProvider, mockInstructions } from "./contexts/LessonContext";
 import LessonInstructions from "./components/lesson-instructions/LessonInstructions";
 
-const API_KEY = process.env.REACT_APP_GEMINI_API_KEY as string;
+export const API_KEY = process.env.REACT_APP_GEMINI_API_KEY as string;
 
 if (typeof API_KEY !== "string") {
   throw new Error("set REACT_APP_GEMINI_API_KEY in .env");
 }
 
 const host = "generativelanguage.googleapis.com";
-const uri = `wss://${host}/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent`;
+export const uri = `wss://${host}/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent`;
 
 function App() {
   // this video reference is used for displaying the active stream, whether that is the webcam or screen capture
